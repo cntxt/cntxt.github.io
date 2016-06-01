@@ -1,0 +1,116 @@
+<!doctype html>
+    <html ng-app="cntxt" ng-controller="controller">
+    <!-- load angular -->
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/showdown/0.3.1/showdown.min.js"></script>
+
+    <!-- load angular-material js and css -->
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/angular_material/1.0.0-rc5/angular-material.min.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.0.0-rc5/angular-material.min.js"></script>
+
+    <!-- load controller.js -->
+    <script src="controller.js"></script>
+
+    <!-- load css -->
+    <link rel="stylesheet" href="main.css">
+
+    <!-- load chart resource -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src = "http://requirejs.org/docs/release/2.2.0/minified/require.js"></script>
+
+    <!-- twitter api stuff -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+    <link rel="icon" href="http://previews.123rf.com/images/koya79/koya791305/koya79130500251/19775933-letter-c-alphabet-cubes-font-Stock-Photo.jpg">
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script src="twitter_api/oauth.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular-sanitize.js"></script>
+
+    <script src="twitter_api/services.js"></script>
+
+
+
+    <title>cntxt</title>  
+    <button ng-click="connectButton()" id="connectButton" type="button" class="btn btn-default">Sign in with Twitter</button>
+    <button ng-click="signOut()" id="signOut" type="button" class="btn btn-default" style="display:none;">Sign Out</button>
+
+    <header>
+
+        <div id="main_title">
+            <h1>cntxt</h1>
+            <h2>connecting content and conversation</h2>
+            <input type="button" ng-if="!connectedTwitter" ng-click="connectButton()" id="signIn" value="sign in with Twitter to start searching"></div>
+            <div ng-if="invalidUrl" id="invalid">make sure your link starts with "http" or "www"</div>
+        </div>
+
+        <div id="main_input" ng-show="connectedTwitter">
+            <input ng-model="url" id="urlInput" placeholder="paste a link here" />
+            <button id="urlInput-button" ng-click="getAllData()" type= "button" class="btn btn-default" ng-disabled="url == null || !connectedTwitter">Search</button>
+
+        </div>
+    </header> 
+    <body class="body_content">
+
+    <div class="col-md-6">
+        <md-card class="reddit-card" ng-if="!redditResponseExists && searchSent"><h1 class="column-labels">Reddit returned no results</h1></md-card>
+        <md-card class="reddit-card" ng-if="redditResponseExists"><h1 class="column-labels">Featured Reddit Comments</h1></md-card>
+        <md-card class="reddit-card" ng-if="redditResponseExists" id="reddit-stats">
+            <div class="stats-wrapper">
+                <h3> Frequent words in featured comments:</h3>
+                <ol>
+                    <li class="reddit-words-list" ng-repeat="wordholder in sortedWordsDict | limitTo: 5"><h4>"{{wordholder[0]}}"</h4></li>
+                </ol>
+            </div>
+
+        </md-card>
+        <md-card class="reddit-card" ng-repeat="comment in reddit.topcomments | orderBy: '-score' ">
+            <div class="reddit-card-content-container">
+                <div class="reddit-comment-text" ng-bind-html="comment.body | markdown"></div>
+                <h5 class="reddit-comment-details"> -{{comment.author}} in 
+                    <a target="_blank" ng-href="http://www.reddit.com/r/{{comment.subreddit}}">/r/{{comment.subreddit}}</a>
+                    Score: {{comment.score}}
+                
+                    <a id = "seeReplies" target="_blank" ng-href="http://www.reddit.com/comments/{{comment.parent_id.split('_')[1]}}/_cntxt_/{{comment.id}}"><button class="seeReplies">See replies</button>
+                    </a>
+                </h5>
+            </div>
+        </md-card> 
+        <br>  
+    </div>
+
+    <div class="col-md-6">
+        <md-card class="twitter-card" ng-if="!twitterResponseExists && searchSent"><h1 class="column-labels">Twitter returned no results</h1></md-card>
+        <md-card class="twitter-card" ng-if="twitterResponseExists"><h1 class="column-labels">Featured Tweets</h1></md-card>
+        <md-card ng-if="twitterResponseExists" class="twitter-card">
+            <div class = "stats-wrapper">
+                <h3>Current Tweets per Minute: {{tweetsPerMinute}}</h3>
+                <h3>Time since last tweet: {{timeSinceLastTweet}}</h3>
+                <h3>Highest number of Retweets: {{highestRT}}</h3>
+                <h3>Highest number of Favorites: {{highestFAV}}</h3>
+                <h3>Frequently used hashtags:</h3>
+                <ol>
+                    <li class = "hashtags-list" ng-repeat="hashtag in hashtags | limitTo: '5'"><a ng-href="https://www.twitter.com/hashtag/{{hashtag[0]}}">#{{hashtag[0]}}</a></li>
+                </ol>
+            </div>
+        </md-card>
+        <md-card class="twitter-card" ng-repeat="t in tweets | orderBy: '-user.followers_count' | limitTo: '10' ">
+
+<!--                 <div class="col-xs-2 col-sm-1">
+                <img ng-src="{{t.user.profile_image_url}}" class="img-circle">
+            </div> -->
+            <div class="col-xs-10 col-sm-11">
+            <div class="twitter-content">
+                <img ng-src="{{t.user.profile_image_url}}" class="img-circle">
+                    <br><h4><span class="twitter-card-text" ng-bind-html="t.text"></span></h4>
+                    <br><h5 class="twitter-card-details"><a ng-href="https://twitter.com/{{t.user.screen_name}}"> @{{t.user.screen_name}}</a> | Followers: {{t.user.followers_count}}  | RTs: {{t.retweet_count}} | Favs: {{t.favorite_count}}</h5>
+
+                </div>
+            </div>
+
+        </md-card>
+        <br>
+    </div>
+
+    </body>
+</html>
