@@ -26,7 +26,7 @@ angular.module('cntxt.services', []).factory('twitterService', function($q) {
                     deferred.resolve();
                 } else {
                     //do something if there's an error
-                    console.log("There was an error processing this request.")
+                    console.log("There was an error processing this request.", error);
 
                 }
             });
